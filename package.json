@@ -1,0 +1,30 @@
+{
+  "name": "rn-notification",
+  "version": "0.0.0",
+  "description": "React Native Cross-Platform Remote and Local Notifications",
+  "main": "index.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "react-native": "^0.31.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mehcode/rn-notification.git"
+  },
+  "keywords": [
+    "react-native",
+    "rn",
+    "notification",
+    "remote",
+    "local",
+    "push",
+    "fcm"
+  ],
+  "author": "Ryan Leckey <leckey.ryan@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mehcode/rn-notification/issues"
+  },
+  "homepage": "https://github.com/mehcode/rn-notification#readme"
+}
