@@ -76,7 +76,7 @@ class NotificationAttributes {
                 JSONObject payloadJson = new JSONObject(payloadM);
 
                 r.payload = payloadJson.toString();
-            } else if (m.getType("payload") == ReadableType.String) {
+            } else {
                 r.payload = m.getString("payload");
             }
         }

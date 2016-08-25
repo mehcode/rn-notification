@@ -30,7 +30,7 @@ public class FCMNotificationListenerService extends FirebaseMessagingService {
             }
 
             // Convert to WritableMap
-            WritableMap m = Arguments.createMap();
+            WritableMap m = new WritableNativeMap();
             for (Iterator<String> it = notificationJson.keys(); it.hasNext();) {
                 String key = it.next();
 
@@ -81,7 +81,6 @@ public class FCMNotificationListenerService extends FirebaseMessagingService {
 
             // Create and show notification
             NotificationAttributes attributes = NotificationAttributes.fromReadableMap(m);
-
             Notification notification = new Notification(
                     this,
 
