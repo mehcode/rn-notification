@@ -28,23 +28,25 @@ Create local notification.
 import Notification from "rn-notification";
 
 Notification.create({
-});
-```
-
-### Register (Remote)
-Register device to receive notifications.
-
-```js
-import Notification from "rn-notification";
-
-Notification.on("token", (token) => {
-  // Invoked immediately for initial registration to get the initial token
-  // Invoked by Firebase if it feels it wants to give you a new token
+  subject: "Biltong",
+  message: "Bacon ipsum dolor amet corned beef biltong picanha sirloin rump tail tongue, jowl kevin ham hock strip steak pastrami kielbasa.",
+  priority: "high",
+  color: "#DE3226",
+  sound: "alert",
+  smallIcon: "ic_launcher",
+  payload: {
+    random: Math.random(),
+  }
 });
 ```
 
 ### Action (Local and Remote)
-Respond to taps from the notification.
+Respond to taps from a remote or local notification.
+
+The callback is invoked regardless of where the notification came
+from (remote or local) or what state the
+application is in when it received the
+notification (dead, background, foreground).
 
 ```js
 import Notification from "rn-notification";
