@@ -73,11 +73,8 @@ class Notification {
 
         // Sound
         if (!mAttributes.sound.equals("default")) {
-            int soundId = mContext.getResources().getIdentifier(
-                    mAttributes.sound, "raw", mContext.getPackageName());
-
             Uri soundUri = Uri.parse(
-                    "android.resource://" + mContext.getPackageName() + "/" + soundId);
+                ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + mContext.getPackageName() + "/raw/" + mAttributes.sound);
 
             builder.setSound(soundUri);
         }
