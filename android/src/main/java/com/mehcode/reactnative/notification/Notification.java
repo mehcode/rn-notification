@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.support.v7.app.NotificationCompat;
+import android.content.ContentResolver;
 
 import android.content.Context;
 
