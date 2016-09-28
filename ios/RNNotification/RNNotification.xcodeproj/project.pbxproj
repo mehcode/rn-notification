@@ -229,6 +229,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = B45CT23BDX;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${SRCROOT}/../../../../ios/**",
+					"${SRCROOT}/../../../react-native/React/**",
+					"${SRCROOT}/../../node_modules/react-native/React/**",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"${SRCROOT}/../../../../ios/**",
@@ -245,6 +251,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = B45CT23BDX;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${SRCROOT}/../../../../ios/**",
+					"${SRCROOT}/../../../react-native/React/**",
+					"${SRCROOT}/../../node_modules/react-native/React/**",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"${SRCROOT}/../../../../ios/**",
@@ -276,6 +288,7 @@
 				765443F41D9B2A93002AF9C5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
