@@ -9,6 +9,7 @@ const {
 } = NativeModules;
 
 const pressListeners = [];
+const tokenListeners = [];
 
 // True if we've emitted the initial notification press
 // that opened this activity
@@ -34,15 +35,22 @@ DeviceEventEmitter.addListener("RNNotification:press", (nativeEvent) => {
   }
 });
 
+DeviceEventEmitter.addListener("RNNotification:registration", (token) => {
+  // Emit
+  for (const listener of tokenListeners) {
+    listener(token);
+  }
+});
+
 export default {
   // Request permissions
-  requestPermissions() {
+  requestPermission() {
     if (Platform.OS === "android") {
       // nop
       return;
     }
 
-    return RNNotification.requestPermissions();
+    return RNNotification.requestPermission();
   },
 
   // Create (local) notification
@@ -53,6 +61,17 @@ export default {
   // Add listener (remote/local)
   addListener(kind, listener) {
     switch (kind) {
+      case "registration":
+        // Token registration
+        tokenListeners.push(listener);
+
+        // Emit the initial token
+        RNNotification.getRegistrationToken().then((token) => {
+          listener(token);
+        });
+
+        break;
+
       case "press":
         // Register listener for normal press events
         pressListeners.push(listener);
@@ -62,6 +81,8 @@ export default {
           RNNotification.getInitialNotificationPress((event) => {
             listener(formatPressEvent(event));
           });
+
+          presentedInitialNotificationPress = true;
         }
 
         break;
