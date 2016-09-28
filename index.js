@@ -1,6 +1,7 @@
 import {
   NativeModules,
-  DeviceEventEmitter
+  DeviceEventEmitter,
+  Platform,
 } from "react-native";
 
 const {
@@ -34,6 +35,16 @@ DeviceEventEmitter.addListener("RNNotification:press", (nativeEvent) => {
 });
 
 export default {
+  // Request permissions
+  requestPermissions() {
+    if (Platform.OS === "android") {
+      // nop
+      return;
+    }
+
+    return RNNotification.requestPermissions();
+  },
+
   // Create (local) notification
   create(options = {}, payload = {}) {
     return RNNotification.create(options, payload);
