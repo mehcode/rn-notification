@@ -25,16 +25,33 @@ NSMutableSet* localRemoteNotificationID;
 
 @synthesize bridge = _bridge;
 
++ (id)alloc
+{
+    static RNNotification *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [super alloc];
+    });
+    return sharedInstance;
+}
+
 // init (from AppDelegate)
 + (void)init:(NSDictionary *)launchOptions {
+    RNNotification* sharedInstance = [[RNNotification alloc] init];
+
     // Initialize lrnid set
     localRemoteNotificationID = [[NSMutableSet alloc] init];
 
     [FIRApp configure];
 
+    if (floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_9_x_Max) {
+        // [...]
+    } else {
+        // Only iOS 10
 #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
-    [[UNUserNotificationCenter currentNotificationCenter] setDelegate:self];
+        [[UNUserNotificationCenter currentNotificationCenter] setDelegate:sharedInstance];
 #endif
+    }
 
     // Check launchOptions
     id remoteLaunch = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
@@ -284,19 +301,25 @@ RCT_REMAP_METHOD(getInitialNotificationPress,
 #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler
 {
-    NSLog(@"willPresentNotification");
-
-//    [[NSNotificationCenter defaultCenter] postNotificationName:RNRemoteNotificationReceived object:self userInfo:notification.request.content.userInfo];
-
-    completionHandler(UNNotificationPresentationOptionAlert);
+    completionHandler(UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionSound);
 }
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)())completionHandler
 {
-    NSLog(@"didReceiveNotificationResponse");
-//    [[NSNotificationCenter defaultCenter] postNotificationName:RNLocalNotificationReceived object:self userInfo:response.notification.request.content.userInfo];
+    id container = response.notification.request.content.userInfo;
 
-    completionHandler(UNNotificationPresentationOptionAlert);
+    NSError *error = nil;
+    NSData *jsonRaw = [[container objectForKey:@"notification"] dataUsingEncoding:NSUTF8StringEncoding];
+    id object = [NSJSONSerialization
+                 JSONObjectWithData:(NSString*)jsonRaw
+                 options:0
+                 error:&error];
+
+    if (!error && [object isKindOfClass:[NSDictionary class]]) {
+        [self handlePress:(NSDictionary*)object];
+    }
+
+    completionHandler(UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionSound);
 }
 #endif
 
