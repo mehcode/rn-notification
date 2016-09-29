@@ -30,6 +30,9 @@
     // TODO: Sound
     handle.soundName = UILocalNotificationDefaultSoundName;
 
+    // Store options object as userInfo (so it gets forwarded around)
+    handle.userInfo = options;
+
     return notification;
 }
 

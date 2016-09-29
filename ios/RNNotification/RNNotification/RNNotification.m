@@ -6,14 +6,55 @@
 #import "RCTEventDispatcher.h"
 #import "RCTUtils.h"
 
+#import "FTNotificationIndicator.h"
+
 #import "UserNotifications/UserNotifications.h"
 
 NSString *const RNRemoteNotificationReceived = @"RNRemoteNotificationReceived";
 NSString *const RNLocalNotificationReceived = @"RNLocalNotificationReceived";
 
-@implementation RNNotification
+NSDictionary const* LaunchNotificationData = nil;
+
+NSMutableSet* localRemoteNotificationID;
+
+@implementation RNNotification {
+    bool isConnected;
+}
 
 @synthesize bridge = _bridge;
+
+// init (from AppDelegate)
++ (void)init:(NSDictionary *)launchOptions {
+    // Initialize lrnid set
+    localRemoteNotificationID = [[NSMutableSet alloc] init];
+
+    [FIRApp configure];
+
+#if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
+    [[UNUserNotificationCenter currentNotificationCenter] setDelegate:self];
+#endif
+
+    // Check launchOptions
+    id remoteLaunch = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    if (remoteLaunch) {
+        // App was launched (from death) by tapping on a (remote) notification
+        NSError *error = nil;
+        NSData *jsonRaw = [[remoteLaunch objectForKey:@"notification"] dataUsingEncoding:NSUTF8StringEncoding];
+        id object = [NSJSONSerialization
+                     JSONObjectWithData:(NSString*)jsonRaw
+                     options:0
+                     error:&error];
+
+        LaunchNotificationData = object;
+    } else {
+        id localLaunch = [launchOptions objectForKey:UIApplicationLaunchOptionsLocalNotificationKey];
+        if (localLaunch) {
+            // App was launched (from death) by tapping on a (local) notification
+            UILocalNotification* ln = localLaunch;
+            LaunchNotificationData = ln.userInfo;
+        }
+    }
+}
 
 - (void)dealloc
 {
@@ -54,11 +95,14 @@ NSString *const RNLocalNotificationReceived = @"RNLocalNotificationReceived";
 
 - (void)connectToFCM
 {
+    if (isConnected) return;
+
     [[FIRMessaging messaging] connectWithCompletion:^(NSError * _Nullable error) {
         if (error != nil) {
             NSLog(@"Unable to connect to FCM. %@", error);
         } else {
             NSLog(@"Connected to FCM.");
+            isConnected = true;
         }
     }];
 }
@@ -67,6 +111,7 @@ NSString *const RNLocalNotificationReceived = @"RNLocalNotificationReceived";
 {
     [[FIRMessaging messaging] disconnect];
     NSLog(@"Disconnected from FCM");
+    isConnected = false;
 }
 
 // .getRegistrationToken (FCM/GCM)
@@ -76,7 +121,7 @@ RCT_EXPORT_METHOD(getRegistrationToken:(RCTPromiseResolveBlock)resolve
 }
 
 - (void) onTokenRefresh {
-    [_bridge.eventDispatcher sendAppEventWithName:@"RNNotification:registration" body:[[FIRInstanceID instanceID] token]];
+    [_bridge.eventDispatcher sendDeviceEventWithName:@"RNNotification:registration" body:[[FIRInstanceID instanceID] token]];
 }
 
 // .requestPermission (iOS only)
@@ -123,38 +168,72 @@ RCT_REMAP_METHOD(create,
 
 // .clearAll – Clear all local notifications
 RCT_REMAP_METHOD(clearAll,
-                 resolver:(RCTPromiseResolveBlock)resolve
+                 clearAll:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject) {
     [RCTSharedApplication() cancelAllLocalNotifications];
 
     resolve([NSNull null]);
 }
 
-// Local notification received
-- (void)handleLocalNotificationReceived:(NSNotification *)notification {
-    NSLog(@"handleLocalNotificationReceived");
-    NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
-    NSLog(@"%@", data);
+// .getInitialNotificationPress – Get launch event
+RCT_REMAP_METHOD(getInitialNotificationPress,
+                 getInitialNotificationPress:(RCTResponseSenderBlock)callback) {
+    if (LaunchNotificationData) {
+        NSDictionary* event = @{@"payload": (NSDictionary*)[LaunchNotificationData objectForKey:@"payload"]};
 
-    //    NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
-    //    [data setValue:@(RCTSharedApplication().applicationState == UIApplicationStateInactive) forKey:@"opened_from_tray"];
-    //    [_bridge.eventDispatcher sendDeviceEventWithName:FCMNotificationReceived body:data];
+        callback(@[event]);
+    }
 }
 
-//+(void) didReceiveLocalNotification:(UILocalNotification *)notification {
-//    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"ROFL"
-//                                                    message:@"Dee dee doo doo."
-//                                                   delegate:self
-//                                          cancelButtonTitle:@"OK"
-//                                          otherButtonTitles:nil];
-//
-//    [alert show];
-//}
+// Handle press
+- (void)handlePress:(NSDictionary*)data {
+    NSDictionary* event = @{@"payload": [data objectForKey:@"payload"]};
+
+    [_bridge.eventDispatcher sendDeviceEventWithName:@"RNNotification:press" body:event];
+}
+
+// Local notification received
+- (void)handleLocalNotificationReceived:(NSNotification *)notification {
+    NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
+
+    if ([UIApplication sharedApplication].applicationState == UIApplicationStateInactive) {
+        // IFF this notification was received remotely while the app was inactive we need to act
+        id uid = [((NSDictionary*)data) objectForKey:@"id"];
+
+        if (uid) {
+            if ([localRemoteNotificationID containsObject:uid]) {
+                [localRemoteNotificationID removeObject:uid];
+                return;
+            }
+        }
+
+        // PRESS
+        [self handlePress:data];
+    } else {
+        // Recieved while in application
+        // Show alert
+
+        // TODO: Play sound
+
+        NSString* subject = [RCTConvert NSString:data[@"subject"]];
+        NSString* message = [RCTConvert NSString:data[@"message"]];
+
+        [FTNotificationIndicator setNotificationIndicatorStyle:UIBlurEffectStyleDark];
+        [FTNotificationIndicator showNotificationWithImage:[UIImage imageNamed:@"AppIcon76x76"]
+                                         title:subject
+                                       message:message
+                                    tapHandler:^{
+                                        // handle user tap
+                                        [self handlePress:data];
+                                    } completion:^{
+                                        // handle completion
+                                    }];
+    }
+}
 
 // Remote notification received
 - (void)handleRemoteNotificationReceived:(NSNotification *)notification {
     NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
-    NSLog(@"handleRemoteNotificationReceived: %@", data);
 
     NSError *error = nil;
     NSData *jsonRaw = [[data objectForKey:@"notification"] dataUsingEncoding:NSUTF8StringEncoding];
@@ -163,12 +242,43 @@ RCT_REMAP_METHOD(clearAll,
                  options:0
                  error:&error];
 
-    NSLog(@"object: %@", object);
-
     if (!error && [object isKindOfClass:[NSDictionary class]]) {
-        [[Notification create:(NSDictionary*)object] show];
+        if ([UIApplication sharedApplication].applicationState == UIApplicationStateInactive && !isConnected) {
+            // Press on a remote initiated notification
+            [self handlePress:(NSDictionary*)object];
+            return;
+        }
+
+        NSMutableDictionary *options = [[NSMutableDictionary alloc]initWithDictionary: object];
+
+        // Remember that this notification (by UID)
+        NSString* uid = [data objectForKey:@"gcm.message_id"];
+        [options setObject:uid forKey:@"id"];
+
+        // If we are inactive - we need TWO local events to fire in order to trigger a press
+        if ([UIApplication sharedApplication].applicationState == UIApplicationStateInactive) {
+            [localRemoteNotificationID addObject:uid];
+        }
+
+        [[Notification create:(NSDictionary*)options] show];
     }
 }
+
+#if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler
+{
+//    [[NSNotificationCenter defaultCenter] postNotificationName:RNRemoteNotificationReceived object:self userInfo:notification.request.content.userInfo];
+
+    completionHandler(UNNotificationPresentationOptionAlert);
+}
+
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)())completionHandler
+{
+//    [[NSNotificationCenter defaultCenter] postNotificationName:RNLocalNotificationReceived object:self userInfo:response.notification.request.content.userInfo];
+
+    completionHandler(UNNotificationPresentationOptionAlert);
+}
+#endif
 
 RCT_EXPORT_MODULE();
 @end
