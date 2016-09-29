@@ -8,7 +8,8 @@
 
 #import "UserNotifications/UserNotifications.h"
 
-NSString *const FCMNotificationReceived = @"FCMNotificationReceived";
+NSString *const RNRemoteNotificationReceived = @"RNRemoteNotificationReceived";
+NSString *const RNLocalNotificationReceived = @"RNLocalNotificationReceived";
 
 @implementation RNNotification
 
@@ -24,8 +25,13 @@ NSString *const FCMNotificationReceived = @"FCMNotificationReceived";
     _bridge = bridge;
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleNotificationReceived:)
-                                                 name:FCMNotificationReceived
+                                             selector:@selector(handleRemoteNotificationReceived:)
+                                                 name:RNRemoteNotificationReceived
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleLocalNotificationReceived:)
+                                                 name:RNLocalNotificationReceived
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -61,16 +67,6 @@ NSString *const FCMNotificationReceived = @"FCMNotificationReceived";
 {
     [[FIRMessaging messaging] disconnect];
     NSLog(@"Disconnected from FCM");
-}
-
-+(void) didReceiveLocalNotification:(UILocalNotification *)notification {
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"ROFL"
-                                                    message:@"Dee dee doo doo."
-                                                   delegate:self
-                                          cancelButtonTitle:@"OK"
-                                          otherButtonTitles:nil];
-
-    [alert show];
 }
 
 // .getRegistrationToken (FCM/GCM)
@@ -134,12 +130,44 @@ RCT_REMAP_METHOD(clearAll,
     resolve([NSNull null]);
 }
 
+// Local notification received
+- (void)handleLocalNotificationReceived:(NSNotification *)notification {
+    NSLog(@"handleLocalNotificationReceived");
+    NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
+    NSLog(@"%@", data);
+
+    //    NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
+    //    [data setValue:@(RCTSharedApplication().applicationState == UIApplicationStateInactive) forKey:@"opened_from_tray"];
+    //    [_bridge.eventDispatcher sendDeviceEventWithName:FCMNotificationReceived body:data];
+}
+
+//+(void) didReceiveLocalNotification:(UILocalNotification *)notification {
+//    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"ROFL"
+//                                                    message:@"Dee dee doo doo."
+//                                                   delegate:self
+//                                          cancelButtonTitle:@"OK"
+//                                          otherButtonTitles:nil];
+//
+//    [alert show];
+//}
+
 // Remote notification received
-- (void)handleNotificationReceived:(NSNotification *)notification {
-    NSLog(@"handleNotificationReceived");
-//    NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
-//    [data setValue:@(RCTSharedApplication().applicationState == UIApplicationStateInactive) forKey:@"opened_from_tray"];
-//    [_bridge.eventDispatcher sendDeviceEventWithName:FCMNotificationReceived body:data];
+- (void)handleRemoteNotificationReceived:(NSNotification *)notification {
+    NSMutableDictionary *data = [[NSMutableDictionary alloc]initWithDictionary: notification.userInfo];
+    NSLog(@"handleRemoteNotificationReceived: %@", data);
+
+    NSError *error = nil;
+    NSData *jsonRaw = [[data objectForKey:@"notification"] dataUsingEncoding:NSUTF8StringEncoding];
+    id object = [NSJSONSerialization
+                 JSONObjectWithData:(NSString*)jsonRaw
+                 options:0
+                 error:&error];
+
+    NSLog(@"object: %@", object);
+
+    if (!error && [object isKindOfClass:[NSDictionary class]]) {
+        [[Notification create:(NSDictionary*)object] show];
+    }
 }
 
 RCT_EXPORT_MODULE();

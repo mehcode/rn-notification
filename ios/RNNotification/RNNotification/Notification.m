@@ -20,11 +20,12 @@
     UILocalNotification* handle = [[UILocalNotification alloc] init];
     notification->handle = handle;
 
-    // Maps to `@notification#title`
-    handle.alertTitle = [RCTConvert NSString:options[@"subject"]];
-
+    // Construct `alertBody` (subject + ":" + message)
     // Maps to `@notification#body`
-    handle.alertBody = [RCTConvert NSString:options[@"message"]];
+    NSString* subject = [RCTConvert NSString:options[@"subject"]];
+    NSString* message = [RCTConvert NSString:options[@"message"]];
+    NSString* alertBody = [NSString stringWithFormat:@"%@: %@", subject, message];
+    handle.alertBody = alertBody;
 
     // TODO: Sound
     handle.soundName = UILocalNotificationDefaultSoundName;

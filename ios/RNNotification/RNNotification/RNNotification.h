@@ -6,7 +6,8 @@
 @import FirebaseInstanceID;
 @import FirebaseMessaging;
 
-extern NSString *const FCMNotificationReceived;
+extern NSString *const RNRemoteNotificationReceived;
+extern NSString *const RNLocalNotificationReceived;
 
 @interface RNNotification : NSObject <RCTBridgeModule>
 @end

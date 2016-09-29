@@ -58,6 +58,17 @@ export default {
     return RNNotification.create(options, payload);
   },
 
+  // Remove listener
+  removeListener(listener) {
+    let index;
+
+    index = tokenListeners.indexOf(listener);
+    if (index >= 0) tokenListeners.splice(index, 1);
+
+    index = pressListeners.indexOf(listener);
+    if (index >= 0) pressListeners.splice(index, 1);
+  },
+
   // Add listener (remote/local)
   addListener(kind, listener) {
     switch (kind) {
