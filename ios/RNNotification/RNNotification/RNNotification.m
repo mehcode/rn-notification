@@ -10,6 +10,8 @@
 
 #import "UserNotifications/UserNotifications.h"
 
+#import <AudioToolbox/AudioToolbox.h>
+
 NSString *const RNRemoteNotificationReceived = @"RNRemoteNotificationReceived";
 NSString *const RNLocalNotificationReceived = @"RNLocalNotificationReceived";
 
@@ -213,7 +215,22 @@ RCT_REMAP_METHOD(getInitialNotificationPress,
         // Recieved while in application
         // Show alert
 
-        // TODO: Play sound
+        // Play sound
+        // TODO: Handle default sound
+        NSString *soundName = [RCTConvert NSString:data[@"sound"]];
+        if (![soundName isEqualToString:@"default"]) {
+            NSArray *parts = [soundName componentsSeparatedByString:@"."];
+            if ([parts count] == 2) {
+                NSString *soundPath = [[NSBundle mainBundle] pathForResource:[parts objectAtIndex:0] ofType:[parts objectAtIndex:1]];
+                if (soundPath) {
+                    SystemSoundID soundID;
+                    AudioServicesCreateSystemSoundID((__bridge CFURLRef)[NSURL fileURLWithPath:soundPath], &soundID);
+                    AudioServicesPlaySystemSound(soundID);
+
+                    // TODO: Dispose? (do we need to with ARC)
+                }
+            }
+        }
 
         NSString* subject = [RCTConvert NSString:data[@"subject"]];
         NSString* message = [RCTConvert NSString:data[@"message"]];
@@ -267,6 +284,8 @@ RCT_REMAP_METHOD(getInitialNotificationPress,
 #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler
 {
+    NSLog(@"willPresentNotification");
+
 //    [[NSNotificationCenter defaultCenter] postNotificationName:RNRemoteNotificationReceived object:self userInfo:notification.request.content.userInfo];
 
     completionHandler(UNNotificationPresentationOptionAlert);
@@ -274,6 +293,7 @@ RCT_REMAP_METHOD(getInitialNotificationPress,
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)())completionHandler
 {
+    NSLog(@"didReceiveNotificationResponse");
 //    [[NSNotificationCenter defaultCenter] postNotificationName:RNLocalNotificationReceived object:self userInfo:response.notification.request.content.userInfo];
 
     completionHandler(UNNotificationPresentationOptionAlert);
