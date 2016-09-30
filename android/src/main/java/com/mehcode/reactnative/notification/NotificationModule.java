@@ -6,26 +6,42 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.v7.app.NotificationCompat;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.LifecycleEventListener;
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.ReadableNativeMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import java.util.Date;
 
 class NotificationModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     Activity mActivity = null;
 
-    IntentFilter mIntentFilter = new IntentFilter(NotificationEventReceiver.INTENT_ID);
-    BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+    IntentFilter mInstanceIDIntentFilter = new IntentFilter(FCMInstanceIDService.INTENT_ID);
+    BroadcastReceiver mInstanceIDIntentReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (getReactApplicationContext().hasActiveCatalystInstance()) {
+                String token = intent.getStringExtra("token");
+
+                getReactApplicationContext()
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("RNNotification:registration", token);
+
+                abortBroadcast();
+            }
+        }
+    };
+
+    IntentFilter mNotificationIntentFilter = new IntentFilter(NotificationEventReceiver.INTENT_ID);
+    BroadcastReceiver mNotificationIntentReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle extras = intent.getExtras();
@@ -58,12 +74,19 @@ class NotificationModule extends ReactContextBaseJavaModule implements Lifecycle
         super(reactContext);
 
         reactContext.addLifecycleEventListener(this);
-        reactContext.registerReceiver(mIntentReceiver, mIntentFilter);
+        reactContext.registerReceiver(mNotificationIntentReceiver, mNotificationIntentFilter);
+        reactContext.registerReceiver(mInstanceIDIntentReceiver, mInstanceIDIntentFilter);
     }
 
     @Override
     public String getName() {
         return "RNNotification";
+    }
+
+    // Gets the (initial) registration token from FCM
+    @ReactMethod
+    public void getRegistrationToken(Promise promise) {
+        promise.resolve(FirebaseInstanceId.getInstance().getToken());
     }
 
     // Gets the press event that spawned the application, if any
