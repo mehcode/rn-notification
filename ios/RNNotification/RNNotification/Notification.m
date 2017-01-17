@@ -1,9 +1,9 @@
 #import <Foundation/Foundation.h>
 #import "Notification.h"
-#import "RCTConvert.h"
-#import "RCTBridge.h"
-#import "RCTEventDispatcher.h"
-#import "RCTUtils.h"
+#import <React/RCTConvert.h>
+#import <React/RCTBridge.h>
+#import <React/RCTEventDispatcher.h>
+#import <React/RCTUtils.h>
 
 #import <UIKit/UILocalNotification.h>
 

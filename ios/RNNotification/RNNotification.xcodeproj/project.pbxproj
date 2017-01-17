@@ -228,6 +228,7 @@
 		765443F31D9B2A93002AF9C5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = B45CT23BDX;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -250,6 +251,7 @@
 		765443F41D9B2A93002AF9C5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				DEVELOPMENT_TEAM = B45CT23BDX;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
