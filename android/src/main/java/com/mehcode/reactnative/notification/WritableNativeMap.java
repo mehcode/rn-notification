@@ -1,6 +1,8 @@
 package com.mehcode.reactnative.notification;
 
 import java.util.HashMap;
+
+import com.facebook.react.bridge.Dynamic;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -49,6 +51,11 @@ public class WritableNativeMap extends HashMap implements WritableMap {
     @Override
     public ReadableMap getMap(String name) {
         return (ReadableMap) this.get(name);
+    }
+
+    @Override
+    public Dynamic getDynamic(String name) {
+        return (Dynamic) this.get(name);
     }
 
     @Override
