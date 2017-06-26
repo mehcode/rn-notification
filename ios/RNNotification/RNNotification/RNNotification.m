@@ -143,6 +143,16 @@ RCT_EXPORT_METHOD(getRegistrationToken:(RCTPromiseResolveBlock)resolve
     [_bridge.eventDispatcher sendDeviceEventWithName:@"RNNotification:registration" body:[[FIRInstanceID instanceID] token]];
 }
 
+- (void)messaging:(nonnull FIRMessaging *)messaging didRefreshRegistrationToken:(nonnull NSString *)fcmToken {
+    // Note that this callback will be fired everytime a new token is generated, including the first
+    // time. So if you need to retrieve the token as soon as it is available this is where that
+    // should be done.
+    NSLog(@"FCM registration token: %@", fcmToken);
+    [_bridge.eventDispatcher sendDeviceEventWithName:@"RNNotification:registration" body:fcmToken];
+    
+    // TODO: If necessary send token to application server.
+}
+
 // .requestPermission (iOS only)
 RCT_EXPORT_METHOD(requestPermission) {
     if (RCTRunningInAppExtension()) {
