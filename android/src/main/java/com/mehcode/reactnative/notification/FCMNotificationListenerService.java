@@ -1,5 +1,8 @@
 package com.mehcode.reactnative.notification;
 
+import android.content.Intent;
+import android.os.Bundle;
+
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.WritableMap;
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -23,7 +26,7 @@ public class FCMNotificationListenerService extends FirebaseMessagingService {
     @Override
     public void onNewToken(String refreshedToken) {
         // Broadcast refreshed token
-        Intent i = new Intent(INTENT_ID);
+        Intent i = new Intent(INSTANCE_ID_INTENT_ID);
         Bundle bundle = new Bundle();
         bundle.putString("token", refreshedToken);
         i.putExtras(bundle);
