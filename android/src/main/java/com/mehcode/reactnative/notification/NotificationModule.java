@@ -24,7 +24,7 @@ import java.util.Date;
 class NotificationModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     Activity mActivity = null;
 
-    IntentFilter mInstanceIDIntentFilter = new IntentFilter(FCMInstanceIDService.INTENT_ID);
+    IntentFilter mInstanceIDIntentFilter = new IntentFilter(FCMNotificationListenerService.INSTANCE_ID_INTENT_ID);
     BroadcastReceiver mInstanceIDIntentReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
